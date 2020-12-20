@@ -15,6 +15,8 @@ pub async fn week(city: &String) -> Result<Vec<f32>, warp::Rejection> {
     let v1 = week_weather_source_1(city).await?;
     let v2 = week_weather_source_2(city).await?;
 
+    println!("----> {:?}, {:?}", v1, v2);
+
     Ok(v1.iter().zip(v2).map(|(a, b)| (a + b) / 2.0).collect())
 }
 
@@ -34,12 +36,20 @@ async fn day_weather_source_2(city: &String, _date: &String) -> Result<f32, warp
     match get_open_weather_t(city).await {
         Ok(t) => Ok(t),
         // TODO: convert error
-        Err(_error) => Err(warp::reject::custom(errors::MetaWeatherError)),
+        Err(_error) => Err(warp::reject::custom(errors::OpenWeatherError)),
     }
 }
 
-async fn week_weather_source_1(_city: &String) -> Result<Vec<f32>, warp::Rejection> {
-    Ok(vec![3.0, 8.0, 4.0, 7.0, 6.0])
+async fn week_weather_source_1(city: &String) -> Result<Vec<f32>, warp::Rejection> {
+    match get_meta_weather_city_id(city).await {
+        Ok(city_id) => match get_meta_weather_week_t(city_id).await {
+            Ok(tv) => Ok(tv),
+            // TODO: convert error
+            Err(_error) => Err(warp::reject::custom(errors::MetaWeatherError)),
+        },
+        // TODO: convert error
+        Err(_error) => Err(warp::reject::custom(errors::MetaWeatherError)),
+    }
 }
 
 async fn week_weather_source_2(_city: &String) -> Result<Vec<f32>, warp::Rejection> {
@@ -85,6 +95,25 @@ async fn get_open_weather_t(city: &String) -> Result<f32, reqwest::Error> {
     {
         Ok(response) => match response.json::<OpenWeatherData>().await {
             Ok(data) => Ok(data.main.temp - K_TEMP),
+            Err(error) => Err(error),
+        },
+        Err(error) => Err(error),
+    }
+}
+
+async fn get_meta_weather_week_t(city_id: i32) -> Result<Vec<f32>, reqwest::Error> {
+    match reqwest::get(&format!(
+        "https://www.metaweather.com/api/location/{}",
+        city_id
+    ))
+    .await
+    {
+        Ok(response) => match response.json::<MetaWeatherData>().await {
+            Ok(data) => Ok(data
+                .consolidated_weather
+                .iter()
+                .map(|i| i.the_temp)
+                .collect()),
             Err(error) => Err(error),
         },
         Err(error) => Err(error),
