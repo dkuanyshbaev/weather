@@ -1,6 +1,7 @@
 mod errors;
 mod filters;
 mod handlers;
+mod types;
 mod weather;
 
 use std::env;
