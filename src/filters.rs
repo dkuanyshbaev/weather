@@ -6,16 +6,15 @@ pub fn weather() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
     day_forecast().or(week_forecast())
 }
 
-// GET /day/vladivostok/12.10.84
+// GET /day/london
 pub fn day_forecast() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path("day")
         .and(warp::get())
         .and(warp::path::param())
-        .and(warp::path::param())
         .and_then(handlers::day_handler)
 }
 
-// GET /week/vladivostok
+// GET /week/london
 pub fn week_forecast() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path("week")
         .and(warp::get())

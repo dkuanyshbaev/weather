@@ -1,3 +1,5 @@
+// OpenWeather and MetaWeather types
+
 use serde_derive::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -91,4 +93,43 @@ pub struct OpenWeatherData {
     pub id: i32,
     pub name: String,
     pub cod: i32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct City {
+    pub id: i64,
+    pub name: String,
+    pub coord: Coord,
+    pub country: String,
+    pub population: i64,
+    pub timezone: i64,
+    pub sunrise: i64,
+    pub sunset: i64,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SysShort {
+    pub pod: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct List {
+    pub dt: i64,
+    pub main: Main,
+    pub weather: Vec<Weather>,
+    pub clouds: Clouds,
+    pub wind: Wind,
+    pub visibility: i64,
+    pub pop: f32,
+    pub sys: SysShort,
+    pub dt_txt: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct OpenWeatherForecast {
+    pub cod: String,
+    pub message: i32,
+    pub cnt: i32,
+    pub list: Vec<List>,
+    pub city: City,
 }

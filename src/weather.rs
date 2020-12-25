@@ -1,26 +1,29 @@
 use crate::errors;
 use crate::types::*;
 
+// Kelvins to Celsius
 const K_TEMP: f32 = 273.15;
+// OpenWeather key
 const OPEN_WEATHER_API_KEY: &str = "3747e0afa07e05391851a943d0a18237";
 
-pub async fn day(city: &String, date: &String) -> Result<f32, warp::Rejection> {
-    let t1 = day_weather_source_1(city, date).await?;
-    let t2 = day_weather_source_2(city, date).await?;
+// Calculate avg temperature for one day
+pub async fn day(city: &String) -> Result<f32, warp::Rejection> {
+    let t1 = day_weather_source_1(city).await?;
+    let t2 = day_weather_source_2(city).await?;
 
     Ok((t1 + t2) / 2.0)
 }
 
+// Calculate avg temperature for week
 pub async fn week(city: &String) -> Result<Vec<f32>, warp::Rejection> {
     let v1 = week_weather_source_1(city).await?;
     let v2 = week_weather_source_2(city).await?;
 
-    println!("----> {:?}, {:?}", v1, v2);
-
     Ok(v1.iter().zip(v2).map(|(a, b)| (a + b) / 2.0).collect())
 }
 
-async fn day_weather_source_1(city: &String, _date: &String) -> Result<f32, warp::Rejection> {
+// First data sourse for one day data
+async fn day_weather_source_1(city: &String) -> Result<f32, warp::Rejection> {
     match get_meta_weather_city_id(city).await {
         Ok(city_id) => match get_meta_weather_t(city_id).await {
             Ok(t) => Ok(t),
@@ -32,7 +35,8 @@ async fn day_weather_source_1(city: &String, _date: &String) -> Result<f32, warp
     }
 }
 
-async fn day_weather_source_2(city: &String, _date: &String) -> Result<f32, warp::Rejection> {
+// Second data sourse for one day data
+async fn day_weather_source_2(city: &String) -> Result<f32, warp::Rejection> {
     match get_open_weather_t(city).await {
         Ok(t) => Ok(t),
         // TODO: convert error
@@ -40,6 +44,7 @@ async fn day_weather_source_2(city: &String, _date: &String) -> Result<f32, warp
     }
 }
 
+// First data sourse for one week data
 async fn week_weather_source_1(city: &String) -> Result<Vec<f32>, warp::Rejection> {
     match get_meta_weather_city_id(city).await {
         Ok(city_id) => match get_meta_weather_week_t(city_id).await {
@@ -52,10 +57,16 @@ async fn week_weather_source_1(city: &String) -> Result<Vec<f32>, warp::Rejectio
     }
 }
 
-async fn week_weather_source_2(_city: &String) -> Result<Vec<f32>, warp::Rejection> {
-    Ok(vec![3.0, 8.0, 4.0, 7.0, 6.0])
+// Second data sourse for one week data
+async fn week_weather_source_2(city: &String) -> Result<Vec<f32>, warp::Rejection> {
+    match get_open_weather_week_t(city).await {
+        Ok(tv) => Ok(tv),
+        // TODO: convert error
+        Err(_error) => Err(warp::reject::custom(errors::OpenWeatherError)),
+    }
 }
 
+// Get city id for MetaWeather
 async fn get_meta_weather_city_id(city: &String) -> Result<i32, reqwest::Error> {
     match reqwest::get(&format!(
         "https://www.metaweather.com/api/location/search/?query={}",
@@ -71,6 +82,7 @@ async fn get_meta_weather_city_id(city: &String) -> Result<i32, reqwest::Error> 
     }
 }
 
+// Get MetaWeather data for one day
 async fn get_meta_weather_t(city_id: i32) -> Result<f32, reqwest::Error> {
     match reqwest::get(&format!(
         "https://www.metaweather.com/api/location/{}",
@@ -86,6 +98,7 @@ async fn get_meta_weather_t(city_id: i32) -> Result<f32, reqwest::Error> {
     }
 }
 
+// Get OpenWeather data for one day
 async fn get_open_weather_t(city: &String) -> Result<f32, reqwest::Error> {
     match reqwest::get(&format!(
         "https://api.openweathermap.org/data/2.5/weather?q={}&appid={}",
@@ -101,6 +114,7 @@ async fn get_open_weather_t(city: &String) -> Result<f32, reqwest::Error> {
     }
 }
 
+// Get MetaWeather data for one week
 async fn get_meta_weather_week_t(city_id: i32) -> Result<Vec<f32>, reqwest::Error> {
     match reqwest::get(&format!(
         "https://www.metaweather.com/api/location/{}",
@@ -112,7 +126,32 @@ async fn get_meta_weather_week_t(city_id: i32) -> Result<Vec<f32>, reqwest::Erro
             Ok(data) => Ok(data
                 .consolidated_weather
                 .iter()
+                .take(5)
                 .map(|i| i.the_temp)
+                .collect()),
+            Err(error) => Err(error),
+        },
+        Err(error) => Err(error),
+    }
+}
+
+// Get OpenWeather data for one week
+async fn get_open_weather_week_t(city: &String) -> Result<Vec<f32>, reqwest::Error> {
+    match reqwest::get(&format!(
+        "https://api.openweathermap.org/data/2.5/forecast?q={}&cnt=40&appid={}",
+        city, OPEN_WEATHER_API_KEY
+    ))
+    .await
+    {
+        Ok(response) => match response.json::<OpenWeatherForecast>().await {
+            // We have a temperature for each 3h range from OpenWeather
+            // Using 12:00 value as day value
+            Ok(data) => Ok(data
+                .list
+                .iter()
+                .skip(2)
+                .step_by(8)
+                .map(|i| i.main.temp - K_TEMP)
                 .collect()),
             Err(error) => Err(error),
         },
