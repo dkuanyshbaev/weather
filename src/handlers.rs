@@ -4,6 +4,7 @@ use crate::weather;
 pub async fn day_handler(city: String) -> Result<impl warp::Reply, warp::Rejection> {
     let t = weather::day(&city).await?;
 
+    // TODO: edit message
     Ok(warp::reply::json(&format!(
         "day temperature at {}: {}",
         city, t
@@ -14,6 +15,7 @@ pub async fn day_handler(city: String) -> Result<impl warp::Reply, warp::Rejecti
 pub async fn week_handler(city: String) -> Result<impl warp::Reply, warp::Rejection> {
     let t = weather::week(&city).await?;
 
+    // TODO: edit message
     Ok(warp::reply::json(&format!(
         "week temperature at {}: {:?}",
         city, t

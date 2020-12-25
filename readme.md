@@ -10,3 +10,7 @@ There are two endpoints:\
 Example usage:\
 curl http://localhost:4444/day/london \
 curl http://localhost:4444/week/london
+
+Run with docker:\
+docker build -t weather . \
+docker run -p 4444:8888 weather

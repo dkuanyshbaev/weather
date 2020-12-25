@@ -2,10 +2,14 @@ use serde_derive::Serialize;
 use std::convert::Infallible;
 use warp::{http::StatusCode, Rejection, Reply};
 
+// MetaWeather errors
+// TODO: need to improve
 #[derive(Debug)]
 pub struct MetaWeatherError;
 impl warp::reject::Reject for MetaWeatherError {}
 
+// Openweather errors
+// TODO: need to improve
 #[derive(Debug)]
 pub struct OpenWeatherError;
 impl warp::reject::Reject for OpenWeatherError {}
@@ -15,6 +19,7 @@ struct ErrorResponse {
     message: String,
 }
 
+// This is our rejections for warp
 pub async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {
     let code;
     let message;
