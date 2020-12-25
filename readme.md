@@ -4,8 +4,8 @@ This is a simple weather forecast application which can show the temperature for
 Data sources: OpenWeather, MetaWeather.
 
 There are two endpoints:\
-/day/%cityname% - for current day data\
-/week/%cityname% - for 5 days data
+/day/cityname - for current day data\
+/week/cityname - for 5 days data
 
 Example usage:\
 curl http://localhost:4444/day/london \
