@@ -37,3 +37,34 @@ async fn main() {
     // Starting server on port 4444
     warp::serve(routes).run(([0, 0, 0, 0], 4444)).await;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::filters;
+    use warp::http::StatusCode;
+    use warp::test::request;
+
+    #[tokio::test]
+    async fn test_day_weather() {
+        let api = filters::weather();
+        let resp = request()
+            .method("GET")
+            .path("/day/moscow")
+            .reply(&api)
+            .await;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_week_weather() {
+        let api = filters::weather();
+        let resp = request()
+            .method("GET")
+            .path("/week/moscow")
+            .reply(&api)
+            .await;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+}
