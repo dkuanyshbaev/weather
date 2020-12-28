@@ -158,3 +158,24 @@ async fn get_open_weather_week_t(city: &String) -> Result<Vec<f32>, reqwest::Err
         Err(error) => Err(error),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::OPEN_WEATHER_API_KEY;
+    use crate::filters;
+    use warp::http::StatusCode;
+    use warp::test::request;
+
+    #[tokio::test]
+    async fn test_open_weather_day() {
+        let api = filters::weather();
+        let url = format!(
+            "https://api.openweathermap.org/data/2.5/weather?q={}&appid={}",
+            "london", OPEN_WEATHER_API_KEY
+        );
+
+        let resp = request().method("GET").path(&url).reply(&api).await;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+}
